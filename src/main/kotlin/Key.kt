@@ -6,8 +6,16 @@ class Key {
     private var keyBits: BitSet
 
     companion object {
-        fun fromString(key: String) {
+        fun fromString(key: String): Key {
+            return fromBytes(key.chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray())
+        }
 
+        fun fromBytes(key: ByteArray): Key {
+            return Key("").apply {
+                keyBits = BitSet.valueOf(key)
+            }
         }
     }
 
@@ -24,7 +32,9 @@ class Key {
     }
 
     constructor(bytes: ByteArray) {
-        keyBits = BitSet.valueOf(bytes)
+        val md = MessageDigest.getInstance("SHA-1")
+        val hash = md.digest(bytes)
+        keyBits = BitSet.valueOf(hash)
     }
 
     fun toBytes() =

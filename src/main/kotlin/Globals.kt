@@ -5,4 +5,6 @@ object Globals {
     lateinit var localNode: Node
     val routingTable = RoutingTable()
     val storage = Storage()
+    var disabled = false
+    const val heartbeatInterval: Long = 1000*10
 }

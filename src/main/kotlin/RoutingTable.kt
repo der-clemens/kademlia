@@ -15,6 +15,10 @@ class RoutingTable {
         getBucket(node.key).addNode(node)
     }
 
+    fun evictNode(node: Node) {
+        getBucket(node.key).evictNode(node)
+    }
+
     fun findClosest(key: Key): List<Node> =
         buckets.flatMap { it.getNodes() }
             .sortedBy { BigInteger(it.key.xor(key).toBytes()).abs() }
@@ -27,17 +31,22 @@ class Bucket(private val bucketId: Int) {
 
 
     fun addNode(node: Node) {
+        if(nodes.contains(node)) {
+            return
+        }
+        if(nodes.size < Globals.k) {
+            nodes.add(node)
+            return
+        }
+        //TODO("PING last seen node")
+        val last = nodes.last
+
         nodes.add(node)
-//        if(nodes.size < Globals.k) {
-//            nodes.add(node)
-//            return
-//        }
-//        val last = nodes.last
-//        TODO("PING last seen node")
+
     }
 
     fun evictNode(node: Node) {
-
+        nodes.remove(node)
     }
 
     fun getNodes(): TreeSet<Node> =

@@ -27,4 +27,10 @@ class Node(val ip: InetAddress, val port: Int): Comparable<Node> {
         }
         return if (lastSeen > other.lastSeen) 1 else -1
     }
+
+    override fun equals(other: Any?): Boolean {
+        if(other !is Node)
+            return false
+        return other.key == key
+    }
 }

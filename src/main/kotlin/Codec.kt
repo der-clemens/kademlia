@@ -22,7 +22,7 @@ import java.security.SecureRandom
  */
 data class Message(val type: MessageType, val ip: InetAddress, val port: Int, val content: Any?)
 enum class MessageType(val id: Byte) {
-    PING(1),STORE(2),FIND_NODE(3),FIND_VALUE(4),PONG(11),REPLY_FIND_NODE(12),REPLY_FIND_VALUE(13)
+    PING(1),STORE(2),FIND_NODE(3),FIND_VALUE(4),PONG(11),REPLY_FIND_NODE(12),REPLY_FIND_VALUE(13),GET_VALUE(14)
 }
 
 val random = SecureRandom()
@@ -52,15 +52,15 @@ fun decode(bytes: ByteArray): Pair<Message, Long>? {
     val msg = when(bytes[0].toInt()) {
         1 -> Message(MessageType.PING, ip, port, null)
         2 -> {
-            val message = bytesToString(bytes.drop(29).dropLast(20))
-            Message(MessageType.STORE, ip, port, message)
+            val tcpSocket = Node.fromBytes(bytes.drop(29).take(20).toByteArray())
+            Message(MessageType.STORE, ip, port, tcpSocket)
         }
         3 -> {
-            val targetKey = Key(bytes.drop(29).take(20).toByteArray())
+            val targetKey = Key.fromBytes(bytes.drop(29).take(20).toByteArray())
             Message(MessageType.FIND_NODE, ip, port, targetKey)
         }
         4 -> {
-            val targetKey = Key(bytes.drop(29).take(20).toByteArray())
+            val targetKey = Key.fromBytes(bytes.drop(29).take(20).toByteArray())
             Message(MessageType.FIND_VALUE, ip, port, targetKey)
         }
         11 -> Message(MessageType.PONG, ip, port, null)
@@ -74,6 +74,10 @@ fun decode(bytes: ByteArray): Pair<Message, Long>? {
         13 -> {
             val value = bytesToString(bytes.drop(29))
             Message(MessageType.REPLY_FIND_VALUE, ip, port, value)
+        }
+        14 -> {
+            val soc = Node.fromBytes(bytes.drop(29).take(20).toByteArray())
+            Message(MessageType.GET_VALUE, ip, port, soc)
         }
         else -> {
             return null
@@ -95,7 +99,7 @@ fun encode(type: MessageType, content: Any? = null, id: Long? = null): Pair<Byte
     val contentBytes = when(type) {
         MessageType.PING -> ByteArray(0)
         MessageType.STORE -> {
-            (content as String).toByteArray(Charsets.UTF_8)
+            (content as Node).toBytes()
         }
         MessageType.FIND_NODE -> {
             (content as Key).toBytes()
@@ -111,7 +115,10 @@ fun encode(type: MessageType, content: Any? = null, id: Long? = null): Pair<Byte
             b + toBytes(nodes)
         }
         MessageType.REPLY_FIND_VALUE -> {
-            (content as String).toByteArray()
+            ByteArray(0)
+        }
+        MessageType.GET_VALUE -> {
+            (content as Node).toBytes()
         }
     }
     replaceSection(bytes, contentBytes, 29)

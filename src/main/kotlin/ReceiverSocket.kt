@@ -1,5 +1,4 @@
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Semaphore
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -18,7 +17,7 @@ class ReceiverSocket {
 
     private fun startReceiver() {
         thread(start = true) {
-            runBlocking{
+            runBlocking {
                 while (true) {
                     val data = ByteArray(1024)
                     val packet = DatagramPacket(data, data.size)
@@ -31,6 +30,10 @@ class ReceiverSocket {
                 }
             }
         }
+    }
+
+    fun toggleBroadcast() {
+        socket.broadcast = !socket.broadcast
     }
 
     suspend fun send(message: ByteArray, id: Long, target: Node, callback: suspend (Message) -> Unit): Job {
@@ -51,7 +54,7 @@ class ReceiverSocket {
         try {
             socket.send(DatagramPacket(message, 1024, InetSocketAddress(target.ip, target.port)))
         } catch (_: Exception) {
-
+            Globals.routingTable.evictNode(Node(target.ip, target.port))
         }
 
         return job
